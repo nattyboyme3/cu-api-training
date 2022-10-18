@@ -20,7 +20,7 @@ namespace CuApiTraining
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Testing request called.");
 
             string name = req.Query["name"];
 
