@@ -4,6 +4,18 @@
       "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Storage/storageAccounts/picturecdn",
       "type": "storage.azure",
       "connectionId": "AzureWebJobsStorage"
+    },
+    "cosmosdb1": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.DocumentDB/databaseAccounts/cufitnesschallengedb",
+      "type": "cosmosdb.azure",
+      "connectionId": "ConnectionStrings"
+    },
+    "secrets1": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.KeyVault/vaults/CuApiTrainingvault",
+      "type": "secrets.keyVault",
+      "connectionId": "VaultUri"
     }
   }
 }

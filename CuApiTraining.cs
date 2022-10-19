@@ -18,6 +18,7 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.Azure.WebJobs.Hosting;
+using CuApiTraining.Models;
 
 [assembly: WebJobsStartup(typeof(CuApiTraining.SwashbuckleStartup))]
 namespace CuApiTraining
@@ -31,9 +32,9 @@ namespace CuApiTraining
                 opts.Documents = new[] {
                     new SwaggerDocument {
                         Name = "v1",
-                            Title = "Swagger document",
-                            Description = "Integrate Swagger UI With Azure Functions",
-                            Version = "v2"
+                            Title = "CU ISS Team API Training",
+                            Description = "Learn to use APIs with our Sweet Sweet Azure Functions",
+                            Version = "v1"
                     }
                 };
                 opts.ConfigureSwaggerGen = x => {
@@ -46,7 +47,8 @@ namespace CuApiTraining
     }
     public static class Functions
     {
-        [FunctionName("Test")]
+        [FunctionName("VerySimpleAPITest")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public static async Task<IActionResult> Test(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
@@ -66,16 +68,17 @@ namespace CuApiTraining
             return new OkObjectResult(responseMessage);
         }
 
-        [FunctionName("All")]
+        [FunctionName("GetAllWidgets")]
+        [ProducesResponseType(typeof(IEnumerable<Widget>), StatusCodes.Status200OK)]
         public static IActionResult AllWidgets(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get",
-                Route = "widgets/all")]HttpRequest req,
+                Route = "widgets")]HttpRequest req,
             [CosmosDB(
                 databaseName: "cuapitraining", 
                 collectionName: "wigets",
                 ConnectionStringSetting = "ConnectionStrings",
                 SqlQuery = "select * from wigets")]
-                IEnumerable<dynamic> widgets,
+                IEnumerable<Widget> widgets,
             ILogger log)
         {
             log.LogInformation($"Fetched {widgets.Count()} records from db: ");
@@ -87,10 +90,12 @@ namespace CuApiTraining
             }
             return new OkObjectResult(widgets);
         }
-        [FunctionName("New")]
+        [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
+        [FunctionName("MakeNewWidget")]
         public static IActionResult NewWidget(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post",
-                Route = "widgets/{sn}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "widgets/{sn}")]
+            [RequestBodyType(typeof(Widget), "The Widget To Create")]
+                HttpRequest req,
             [CosmosDB(
                 databaseName: "cuapitraining",
                 collectionName: "wigets",
@@ -104,20 +109,21 @@ namespace CuApiTraining
             document.id = Guid.NewGuid();
             if (String.IsNullOrEmpty((string)document.name)) document.name = sn;
             string message = $"Wrote new wiget with sn {sn}";
-            dynamic responseMessage = new { Status = "OK", Message = message };
+            Dictionary<string, string> responseMessage = new Dictionary<string, string>() { { "Status", "OK" }, { "Message", message } };
             log.LogInformation(message);
             return new OkObjectResult(responseMessage);
         }
-        [FunctionName("AuthAll")]
+        [FunctionName("GetAllWidgetsAuthorized")]
+        [ProducesResponseType(typeof(IEnumerable<Widget>), StatusCodes.Status200OK)]
         public static IActionResult AuthAllWidgets(
             [HttpTrigger(AuthorizationLevel.Function, "get",
-                Route = "auth/widgets/all")]HttpRequest req,
+                Route = "auth/widgets")]HttpRequest req,
             [CosmosDB(
                 databaseName: "cuapitraining",
                 collectionName: "wigets",
                 ConnectionStringSetting = "ConnectionStrings",
                 SqlQuery = "select * from wigets")]
-                IEnumerable<dynamic> widgets,
+                IEnumerable<Widget> widgets,
             ILogger log)
         {
             log.LogInformation($"Fetched {widgets.Count()} records from db: ");
@@ -129,10 +135,12 @@ namespace CuApiTraining
             }
             return new OkObjectResult(widgets);
         }
-        [FunctionName("AuthNew")]
+        [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
+        [FunctionName("MakeNewWidgetAuthorized")]
         public static IActionResult AuthNewWidget(
-            [HttpTrigger(AuthorizationLevel.Function, "post",
-                Route = "auth/widgets/{sn}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/widgets/{sn}")]
+            [RequestBodyType(typeof(Widget), "The Widget To Create")]
+                HttpRequest req,
             [CosmosDB(
                 databaseName: "cuapitraining",
                 collectionName: "wigets",
@@ -146,7 +154,7 @@ namespace CuApiTraining
             document.id = Guid.NewGuid();
             if (String.IsNullOrEmpty((string)document.name)) document.name = sn;
             string message = $"Wrote new wiget with sn {sn}";
-            dynamic responseMessage = new { Status = "OK", Message = message };
+            Dictionary<string,string> responseMessage = new Dictionary<string, string>() { {  "Status", "OK" }, { "Message", message } };
             log.LogInformation(message);
             return new OkObjectResult(responseMessage);
         }
