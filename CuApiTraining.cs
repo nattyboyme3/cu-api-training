@@ -158,7 +158,76 @@ namespace CuApiTraining
             log.LogInformation(message);
             return new OkObjectResult(responseMessage);
         }
+        [FunctionName("FilterWidgetsAuthorized")]
+        [ProducesResponseType(typeof(IEnumerable<Widget>), StatusCodes.Status200OK)]
+        public static IActionResult AuthFilterWidgets(
+            [HttpTrigger(AuthorizationLevel.Function, "post",
+                Route = "auth/widgets/filter")]HttpRequest req,
+            [CosmosDB(
+                databaseName: "cuapitraining",
+                collectionName: "wigets",
+                ConnectionStringSetting = "ConnectionStrings",
+                SqlQuery = $"select * from wigets")]
+                IEnumerable<Widget> widgets,
+            ILogger log)
+        {
+            string requestBody = new StreamReader(req.Body).ReadToEnd();
+            dynamic request_body = JsonConvert.DeserializeObject(requestBody);
+            foreach (var key in request_body.Keys)
+            {
+                var value = request_body[key];
+                if (String.IsNullOrEmpty(value)) continue;
+                PropertyInfo prop = typeof(Widget).GetProperty(key);
+                if (prop != null)
+                {
+                    widgets = widgets.Where(m => prop.GetValue(m, null) == value);
+                }
+            }
+            log.LogInformation($"Fetched {widgets.Count()} records from db: ");
+            foreach (var w in widgets)
+            {
+                string sn = w.sn ?? "None";
+                log.LogInformation("  SN:" + sn);
+            }
+
+            return new OkObjectResult(widgets);
+        }
+        [FunctionName("FilterWidgets")]
+        [ProducesResponseType(typeof(IEnumerable<Widget>), StatusCodes.Status200OK)]
+        public static IActionResult FilterWidgets(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post",
+                Route = "widgets/filter")]HttpRequest req,
+            [CosmosDB(
+                databaseName: "cuapitraining",
+                collectionName: "wigets",
+                ConnectionStringSetting = "ConnectionStrings",
+                SqlQuery = $"select * from wigets")]
+                IEnumerable<Widget> widgets,
+            ILogger log)
+        {
+            string requestBody = new StreamReader(req.Body).ReadToEnd();
+            dynamic request_body = JsonConvert.DeserializeObject(requestBody);
+            foreach (var key in request_body.Keys)
+            {
+                var value = request_body[key];
+                if (String.IsNullOrEmpty(value)) continue;
+                PropertyInfo prop = typeof(Widget).GetProperty(key);
+                if (prop != null)
+                {
+                    widgets = widgets.Where(m => prop.GetValue(m, null) == value);
+                }
+            }
+            log.LogInformation($"Fetched {widgets.Count()} records from db: ");
+            foreach (var w in widgets)
+            {
+                string sn = w.sn ?? "None";
+                log.LogInformation("  SN:" + sn);
+            }
+
+            return new OkObjectResult(widgets);
+        }
     }
+    #region swagger
     public static class SwaggerFunctions
     {
         [SwaggerIgnore]
@@ -178,6 +247,7 @@ namespace CuApiTraining
             return Task.FromResult(swasBuckleClient.CreateSwaggerUIResponse(req, "swagger/json"));
         }
     }
+    #endregion swagger
 }
 
 

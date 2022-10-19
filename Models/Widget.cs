@@ -13,7 +13,7 @@ namespace CuApiTraining.Models
     public class NoSqlObject
     {
         [Required, NotNull]
-        protected string id { get; set; }
+        internal string id { get; set; }
         protected string _rid { get; set; }
         protected string _self { get; set; }
         protected string _etag { get; set; }

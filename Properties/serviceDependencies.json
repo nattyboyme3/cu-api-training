@@ -4,13 +4,13 @@
       "type": "storage",
       "connectionId": "AzureWebJobsStorage"
     },
-    "cosmosdb1": {
-      "type": "cosmosdb",
-      "connectionId": "ConnectionStrings"
-    },
     "secrets1": {
       "type": "secrets",
       "connectionId": "VaultUri"
+    },
+    "cosmosdb1": {
+      "type": "cosmosdb",
+      "connectionId": "ConnectionStrings"
     }
   }
 }
