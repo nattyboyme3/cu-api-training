@@ -5,10 +5,11 @@
     <UserSecretsId>ca5be18e-519f-4596-8653-0fd78e33d60c</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AzureExtensions.Swashbuckle" Version="3.3.2" />
     <PackageReference Include="Microsoft.AspNetCore.AzureKeyVault.HostingStartup" Version="2.0.4" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.3" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

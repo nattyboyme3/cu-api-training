@@ -9,10 +9,41 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
+using AzureFunctions.Extensions.Swashbuckle;
+using System.Reflection;
+using AzureFunctions.Extensions.Swashbuckle.Attribute;
+using AzureFunctions.Extensions.Swashbuckle.Settings;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using System.Net.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.Azure.WebJobs.Hosting;
 
-
+[assembly: WebJobsStartup(typeof(CuApiTraining.SwashbuckleStartup))]
 namespace CuApiTraining
-{
+{   
+    public class SwashbuckleStartup : FunctionsStartup
+    {
+        public override void Configure(IFunctionsHostBuilder builder)
+        {
+            builder.AddSwashBuckle(Assembly.GetExecutingAssembly(), opts => {
+                opts.AddCodeParameter = true;
+                opts.Documents = new[] {
+                    new SwaggerDocument {
+                        Name = "v1",
+                            Title = "Swagger document",
+                            Description = "Integrate Swagger UI With Azure Functions",
+                            Version = "v2"
+                    }
+                };
+                opts.ConfigureSwaggerGen = x => {
+                    x.CustomOperationIds(apiDesc => {
+                        return apiDesc.TryGetMethodInfo(out MethodInfo mInfo) ? mInfo.Name : default(Guid).ToString();
+                    });
+                };
+            });
+        }
+    }
     public static class Functions
     {
         [FunctionName("Test")]
@@ -44,14 +75,15 @@ namespace CuApiTraining
                 collectionName: "wigets",
                 ConnectionStringSetting = "ConnectionStrings",
                 SqlQuery = "select * from wigets")]
-                IEnumerable<string> widgets,
+                IEnumerable<dynamic> widgets,
             ILogger log)
         {
             log.LogInformation($"Fetched {widgets.Count()} records from db: ");
 
             foreach (var w in widgets)
             {
-                log.LogInformation("  " + w);
+                string sn = w.sn ?? "None";
+                log.LogInformation("  SN:" + sn);
             }
             return new OkObjectResult(widgets);
         }
@@ -60,8 +92,8 @@ namespace CuApiTraining
             [HttpTrigger(AuthorizationLevel.Anonymous, "post",
                 Route = "widgets/{sn}")]HttpRequest req,
             [CosmosDB(
-                databaseName: "ToDoItems",
-                collectionName: "Items",
+                databaseName: "cuapitraining",
+                collectionName: "wigets",
                 ConnectionStringSetting = "ConnectionStrings")]out dynamic document,
             ILogger log, 
             string sn)
@@ -70,13 +102,75 @@ namespace CuApiTraining
             document = JsonConvert.DeserializeObject(requestBody);
             document.sn = sn;
             document.id = Guid.NewGuid();
-            if (String.IsNullOrEmpty(document.name)) document.name = sn;
+            if (String.IsNullOrEmpty((string)document.name)) document.name = sn;
+            string message = $"Wrote new wiget with sn {sn}";
+            dynamic responseMessage = new { Status = "OK", Message = message };
+            log.LogInformation(message);
+            return new OkObjectResult(responseMessage);
+        }
+        [FunctionName("AuthAll")]
+        public static IActionResult AuthAllWidgets(
+            [HttpTrigger(AuthorizationLevel.Function, "get",
+                Route = "auth/widgets/all")]HttpRequest req,
+            [CosmosDB(
+                databaseName: "cuapitraining",
+                collectionName: "wigets",
+                ConnectionStringSetting = "ConnectionStrings",
+                SqlQuery = "select * from wigets")]
+                IEnumerable<dynamic> widgets,
+            ILogger log)
+        {
+            log.LogInformation($"Fetched {widgets.Count()} records from db: ");
+
+            foreach (var w in widgets)
+            {
+                string sn = w.sn ?? "None";
+                log.LogInformation("  SN:" + sn);
+            }
+            return new OkObjectResult(widgets);
+        }
+        [FunctionName("AuthNew")]
+        public static IActionResult AuthNewWidget(
+            [HttpTrigger(AuthorizationLevel.Function, "post",
+                Route = "auth/widgets/{sn}")]HttpRequest req,
+            [CosmosDB(
+                databaseName: "cuapitraining",
+                collectionName: "wigets",
+                ConnectionStringSetting = "ConnectionStrings")]out dynamic document,
+            ILogger log,
+            string sn)
+        {
+            string requestBody = new StreamReader(req.Body).ReadToEnd();
+            document = JsonConvert.DeserializeObject(requestBody);
+            document.sn = sn;
+            document.id = Guid.NewGuid();
+            if (String.IsNullOrEmpty((string)document.name)) document.name = sn;
             string message = $"Wrote new wiget with sn {sn}";
             dynamic responseMessage = new { Status = "OK", Message = message };
             log.LogInformation(message);
             return new OkObjectResult(responseMessage);
         }
     }
+    public static class SwaggerFunctions
+    {
+        [SwaggerIgnore]
+        [FunctionName("Swagger")]
+        public static Task<HttpResponseMessage> Swagger(
+                [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "swagger/json")] HttpRequestMessage req,
+                [SwashBuckleClient] ISwashBuckleClient swasBuckleClient)
+        {
+            return Task.FromResult(swasBuckleClient.CreateSwaggerJsonDocumentResponse(req));
+        }
+        [SwaggerIgnore]
+        [FunctionName("SwaggerUI")]
+        public static Task<HttpResponseMessage> SwaggerUI(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "swagger/ui")] HttpRequestMessage req,
+        [SwashBuckleClient] ISwashBuckleClient swasBuckleClient)
+        {
+            return Task.FromResult(swasBuckleClient.CreateSwaggerUIResponse(req, "swagger/json"));
+        }
+    }
 }
+
 
 
